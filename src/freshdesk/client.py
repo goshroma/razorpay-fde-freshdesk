@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -13,6 +14,10 @@ from src.freshdesk.exceptions import (
 )
 
 logger = logging.getLogger("freshdesk")
+
+MAX_RETRIES = 3
+BASE_BACKOFF_SECONDS = 1
+MAX_WAIT_SECONDS = 30
 
 
 class FreshdeskClient:
@@ -34,30 +39,62 @@ class FreshdeskClient:
             os.getenv("FRESHDESK_API_KEY", ""),
         )
 
+    def _wait_seconds(self, response, attempt: int) -> int:
+        retry_after = response.headers.get("Retry-After", "")
+        if retry_after.isdigit():
+            return min(int(retry_after), MAX_WAIT_SECONDS)
+        return min(BASE_BACKOFF_SECONDS * 2**attempt, MAX_WAIT_SECONDS)
+
     def _request(self, path: str, params: dict | None = None):
         url = f"{self.base_url}{path}"
-        logger.info("GET %s", path)
-        try:
-            response = self.session.get(url, params=params, timeout=self.timeout)
-        except requests.Timeout:
-            raise FreshdeskError("Freshdesk request timed out")
-        except requests.ConnectionError:
-            raise FreshdeskError("Could not connect to Freshdesk")
+        for attempt in range(MAX_RETRIES + 1):
+            logger.info("GET %s", path)
+            try:
+                response = self.session.get(
+                    url, params=params, timeout=self.timeout
+                )
+            except requests.Timeout:
+                raise FreshdeskError("Freshdesk request timed out")
+            except requests.ConnectionError:
+                raise FreshdeskError("Could not connect to Freshdesk")
 
-        status = response.status_code
-        if status == 200:
-            return response.json()
-        if status == 400:
-            raise InvalidRequestError("Freshdesk rejected the request as invalid")
-        if status == 401:
-            raise AuthenticationError("Freshdesk authentication failed")
-        if status == 403:
-            raise AuthenticationError("Freshdesk denied permission for this resource")
-        if status == 404:
-            raise NotFoundError("Freshdesk resource not found")
-        if status == 429:
-            raise RateLimitError("Freshdesk rate limit exceeded")
-        raise FreshdeskError(f"Freshdesk returned an unexpected status {status}")
+            status = response.status_code
+            if status == 200:
+                return response.json()
+            if status == 429 or status >= 500:
+                if attempt < MAX_RETRIES:
+                    wait = self._wait_seconds(response, attempt)
+                    logger.warning(
+                        "Freshdesk returned %s, retry %s of %s in %ss",
+                        status,
+                        attempt + 1,
+                        MAX_RETRIES,
+                        wait,
+                    )
+                    time.sleep(wait)
+                    continue
+                if status == 429:
+                    raise RateLimitError(
+                        "Freshdesk rate limit still exceeded after retries"
+                    )
+                raise FreshdeskError(
+                    f"Freshdesk server error {status} after retries"
+                )
+            if status == 400:
+                raise InvalidRequestError(
+                    "Freshdesk rejected the request as invalid"
+                )
+            if status == 401:
+                raise AuthenticationError("Freshdesk authentication failed")
+            if status == 403:
+                raise AuthenticationError(
+                    "Freshdesk denied permission for this resource"
+                )
+            if status == 404:
+                raise NotFoundError("Freshdesk resource not found")
+            raise FreshdeskError(
+                f"Freshdesk returned an unexpected status {status}"
+            )
 
     def get_ticket(self, ticket_id: int) -> dict:
         return self._request(f"/tickets/{ticket_id}")

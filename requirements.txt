@@ -1,5 +1,5 @@
 requests
 python-dotenv
-mcp[cli]
+mcp[cli]<2
 pytest
 responses

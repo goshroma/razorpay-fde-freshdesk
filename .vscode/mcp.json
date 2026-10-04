@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "freshdesk": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "env": { "PYTHONPATH": "${workspaceFolder}" }
+    }
+  }
+}
