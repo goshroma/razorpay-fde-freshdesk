@@ -276,6 +276,30 @@ See [docs/capabilities.md](docs/capabilities.md).
 6. "Find unresolved support tickets and summarize the major payment-related issues that need attention." -> `search_tickets`, then `list_conversations` / `get_ticket`, then a summary.
 7. Ask the agent to issue a refund or close a ticket. It has no tool to do so.
 
+### Screenshots
+
+Source data: a fictional ticket in Freshdesk, with a private note.
+
+![Freshdesk ticket](docs/screenshots/01_freshdesk_ticket.png)
+
+The agent calls `get_ticket` over MCP and receives normalized data (status "Open", not the raw code 2).
+
+![Agent calling get_ticket](docs/screenshots/02_get_ticket.png)
+
+The main merchant question, answered from live connector data.
+
+![Summary question](docs/screenshots/03_summary_question.png)
+
+![Issue patterns](docs/screenshots/04_summary_patterns.png)
+
+![Priority focus](docs/screenshots/05_summary_priorities.png)
+
+The read-only boundary: asked to close a ticket, the agent finds it has no tool to do so.
+
+![Close request](docs/screenshots/06_close_request.png)
+
+![Read-only result](docs/screenshots/07_read_only_result.png)
+
 ## Assumptions
 
 - One Freshdesk account, one API key, one merchant.
