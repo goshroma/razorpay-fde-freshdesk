@@ -1,0 +1,83 @@
+[
+  {
+    "name": "list_tickets",
+    "description": "Browse recent support tickets, newest first, one page at a time.\n\n    Use this to get an overview when no specific ticket ID or filter is known.\n    Returns ticket summaries without descriptions. Call get_ticket for full\n    detail on one ticket. per_page must be between 1 and 50.\n    ",
+    "inputSchema": {
+      "properties": {
+        "page": {
+          "default": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "per_page": {
+          "default": 20,
+          "title": "Per Page",
+          "type": "integer"
+        }
+      },
+      "title": "list_ticketsArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_ticket",
+    "description": "Get full details of one ticket, including its description, by exact ID.\n\n    Use this when the ticket ID is already known, for example from\n    list_tickets or search_tickets results.\n    ",
+    "inputSchema": {
+      "properties": {
+        "ticket_id": {
+          "title": "Ticket Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ticket_id"
+      ],
+      "title": "get_ticketArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "search_tickets",
+    "description": "Find tickets matching a Freshdesk field filter query.\n\n    This is a field filter, NOT keyword search. It cannot match words in\n    subjects or descriptions. Supported fields include status\n    (2=Open, 3=Pending, 4=Resolved, 5=Closed), priority (1=Low, 2=Medium,\n    3=High, 4=Urgent), tag, and type. Combine with AND / OR and parentheses.\n    Examples: \"status:2\", \"status:2 OR status:3\" (all unresolved),\n    \"priority:4 AND status:2\", \"tag:'refund'\".\n    Returns up to 30 ticket summaries per page, pages 1 to 10.\n    ",
+    "inputSchema": {
+      "properties": {
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "page": {
+          "default": 1,
+          "title": "Page",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "title": "search_ticketsArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_conversations",
+    "description": "Get the replies and notes on one ticket, by ticket ID.\n\n    Use this when the ticket description alone is not enough and you need\n    the back-and-forth between the customer and support agents.\n    ",
+    "inputSchema": {
+      "properties": {
+        "ticket_id": {
+          "title": "Ticket Id",
+          "type": "integer"
+        },
+        "page": {
+          "default": 1,
+          "title": "Page",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ticket_id"
+      ],
+      "title": "list_conversationsArguments",
+      "type": "object"
+    }
+  }
+]
